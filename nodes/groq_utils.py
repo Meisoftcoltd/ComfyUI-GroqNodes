@@ -384,7 +384,8 @@ class ImageConverter:
 
 class ModelCache:
     """
-    Caches model information to avoid repeated file reads.
+    Caches model information to avoid repeated file reads or API calls.
+    Fetches dynamically from the Groq API when possible, falling back to local config.
     """
 
     _cache: Optional[Dict[str, Any]] = None
@@ -393,10 +394,10 @@ class ModelCache:
     @classmethod
     def load_models(cls, force_reload: bool = False) -> Dict[str, Any]:
         """
-        Load model configuration from JSON file.
+        Load model configuration dynamically from Groq API or fallback to JSON file.
 
         Args:
-            force_reload: Force reload from file even if cached
+            force_reload: Force reload from source even if cached
 
         Returns:
             Dictionary containing model configurations
@@ -404,6 +405,13 @@ class ModelCache:
         if cls._cache is not None and not force_reload:
             return cls._cache
 
+        # Try fetching from API first
+        api_cache = cls._fetch_models_from_api()
+        if api_cache:
+            cls._cache = api_cache
+            return cls._cache
+
+        # Fallback to config file
         if cls._cache_path is None:
             current_dir = Path(__file__).parent.parent
             cls._cache_path = current_dir / "configs" / "models.json"
@@ -415,6 +423,50 @@ class ModelCache:
         except Exception as e:
             print(f"Error loading model config: {e}")
             return {"chat_models": [], "vision_models": [], "audio_models": []}
+
+    @classmethod
+    def _fetch_models_from_api(cls) -> Optional[Dict[str, Any]]:
+        """
+        Fetch models from the Groq API and categorize them.
+
+        Returns:
+            Categorized dictionary of models or None if fetch fails.
+        """
+        try:
+            # We don't want to throw an exception if the API key isn't set yet during init
+            # so we explicitly check if it's available in the environment.
+            api_key = os.getenv("GROQ_API_KEY")
+            if not api_key:
+                return None
+
+            client = GroqAPIManager.get_client(api_key)
+            api_models = client.models.list()
+
+            chat_models = []
+            vision_models = []
+            audio_models = []
+
+            for model_obj in api_models.data:
+                model_id = model_obj.id
+                model_info = {"id": model_id}
+
+                # Basic string matching categorization
+                model_id_lower = model_id.lower()
+                if "whisper" in model_id_lower:
+                    audio_models.append(model_info)
+                elif "vision" in model_id_lower or "llava" in model_id_lower:
+                    vision_models.append(model_info)
+                else:
+                    chat_models.append(model_info)
+
+            return {
+                "chat_models": chat_models,
+                "vision_models": vision_models,
+                "audio_models": audio_models
+            }
+        except Exception as e:
+            print(f"Failed to fetch models dynamically from Groq API: {e}")
+            return None
 
     @classmethod
     def get_model_list(cls, model_type: str) -> List[str]:
@@ -433,7 +485,13 @@ class ModelCache:
         if model_key not in models:
             return []
 
-        return [model["id"] for model in models[model_key]]
+        model_list = [model["id"] for model in models[model_key]]
+
+        # Absolute fallback if somehow the category is completely empty after API/JSON fallback
+        if not model_list and model_type == "chat":
+            return ["llama-3.3-70b-versatile"]
+
+        return model_list
 
     @classmethod
     def get_model_info(cls, model_id: str, model_type: str) -> Optional[Dict[str, Any]]:
