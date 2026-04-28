@@ -96,6 +96,11 @@ class GroqToolUseNode:
                     "default": True,
                     "description": "Allow calling multiple tools simultaneously"
                 }),
+                "custom_model": ("STRING", {
+                    "default": "",
+                    "multiline": False,
+                    "description": "Optional custom model ID to override the dropdown selection"
+                }),
             },
         }
 
@@ -114,6 +119,7 @@ class GroqToolUseNode:
         api_key: str = "",
         tool_choice: str = "auto",
         parallel_tool_calls: bool = True,
+        custom_model: str = "",
     ) -> Tuple[str, str, str]:
         """
         Execute chat completion with tool calling.
@@ -141,9 +147,11 @@ class GroqToolUseNode:
 
             messages = [{"role": "user", "content": prompt}]
 
+            target_model = custom_model.strip() if custom_model and custom_model.strip() else model
+
             request_params = {
                 "messages": messages,
-                "model": model,
+                "model": target_model,
                 "temperature": temperature,
                 "tools": tools,
                 "tool_choice": tool_choice,

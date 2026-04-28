@@ -82,6 +82,11 @@ class GroqVisionNode:
                     "step": 5,
                     "description": "Image compression quality (50-100)"
                 }),
+                "custom_model": ("STRING", {
+                    "default": "",
+                    "multiline": False,
+                    "description": "Optional custom model ID to override the dropdown selection"
+                }),
             },
         }
 
@@ -101,6 +106,7 @@ class GroqVisionNode:
         api_key: str = "",
         system_prompt: str = "",
         jpeg_quality: int = 95,
+        custom_model: str = "",
     ) -> Tuple[str, str]:
         """
         Analyze image(s) using Groq vision API.
@@ -131,9 +137,11 @@ class GroqVisionNode:
 
             messages = self._build_vision_messages(prompt, base64_images, system_prompt)
 
+            target_model = custom_model.strip() if custom_model and custom_model.strip() else model
+
             request_params = {
                 "messages": messages,
-                "model": model,
+                "model": target_model,
                 "temperature": temperature,
                 "max_tokens": max_tokens,
             }

@@ -84,6 +84,11 @@ class GroqBatchNode:
                     "step": 1,
                     "description": "Maximum number of concurrent requests"
                 }),
+                "custom_model": ("STRING", {
+                    "default": "",
+                    "multiline": False,
+                    "description": "Optional custom model ID to override the dropdown selection"
+                }),
             },
         }
 
@@ -102,6 +107,7 @@ class GroqBatchNode:
         api_key: str = "",
         system_prompt: str = "",
         max_concurrent: int = 5,
+        custom_model: str = "",
     ) -> Tuple[str, str, str]:
         """
         Process multiple prompts concurrently.
@@ -128,9 +134,11 @@ class GroqBatchNode:
             if not prompts:
                 raise ValueError("Prompts list cannot be empty")
 
+            target_model = custom_model.strip() if custom_model and custom_model.strip() else model
+
             responses, errors = asyncio.run(
                 self._process_batch_async(
-                    prompts, model, temperature, max_tokens, api_key, system_prompt, max_concurrent
+                    prompts, target_model, temperature, max_tokens, api_key, system_prompt, max_concurrent
                 )
             )
 

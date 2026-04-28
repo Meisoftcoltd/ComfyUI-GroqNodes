@@ -437,6 +437,7 @@ class ModelCache:
             # so we explicitly check if it's available in the environment.
             api_key = os.getenv("GROQ_API_KEY")
             if not api_key:
+                print("WARNING: GROQ_API_KEY environment variable not found. Falling back to static models config. To enable dynamic model fetching at startup, please set the GROQ_API_KEY in your .env file.")
                 return None
 
             client = GroqAPIManager.get_client(api_key)
