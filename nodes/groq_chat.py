@@ -95,6 +95,11 @@ class GroqChatNode:
                     "max": 2147483647,
                     "description": "Random seed for reproducibility (-1 for random)"
                 }),
+                "custom_model": ("STRING", {
+                    "default": "",
+                    "multiline": False,
+                    "description": "Optional custom model ID to override the dropdown selection"
+                }),
             },
         }
 
@@ -115,6 +120,7 @@ class GroqChatNode:
         system_prompt: str = "",
         conversation_history: str = "[]",
         seed: int = -1,
+        custom_model: str = "",
     ) -> Tuple[str, str, str]:
         """
         Generate text completion using Groq API.
@@ -142,9 +148,11 @@ class GroqChatNode:
 
             messages = self._build_messages(prompt, system_prompt, conversation_history)
 
+            target_model = custom_model.strip() if custom_model and custom_model.strip() else model
+
             request_params = {
                 "messages": messages,
-                "model": model,
+                "model": target_model,
                 "temperature": temperature,
                 "max_tokens": max_tokens,
                 "top_p": top_p,

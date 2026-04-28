@@ -75,6 +75,11 @@ class GroqAudioNode:
                     "display": "slider",
                     "description": "Sampling temperature for transcription"
                 }),
+                "custom_model": ("STRING", {
+                    "default": "",
+                    "multiline": False,
+                    "description": "Optional custom model ID to override the dropdown selection"
+                }),
             },
         }
 
@@ -93,6 +98,7 @@ class GroqAudioNode:
         prompt: str = "",
         response_format: str = "json",
         temperature: float = 0.0,
+        custom_model: str = "",
     ) -> Tuple[str, str]:
         """
         Transcribe audio file using Groq Whisper API.
@@ -127,9 +133,11 @@ class GroqAudioNode:
 
             client = GroqAPIManager.get_client(api_key if api_key else None)
 
+            target_model = custom_model.strip() if custom_model and custom_model.strip() else model
+
             request_params = {
                 "file": audio_file_path,
-                "model": model,
+                "model": target_model,
                 "response_format": response_format,
                 "temperature": temperature,
             }

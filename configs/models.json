@@ -35,12 +35,6 @@
       "context": 131072,
       "speed": "450 T/sec",
       "description": "Lighter agentic model with web search and reasoning capabilities"
-    },
-    {
-      "id": "meta-llama/llama-guard-4-12b",
-      "context": 131072,
-      "speed": "1200 T/sec",
-      "description": "Content screening and safety model"
     }
   ],
   "vision_models": [
